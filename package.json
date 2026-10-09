@@ -1,0 +1,11 @@
+{
+  "name": "cartoes-de-estudo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Flashcards com repetição espaçada pelo algoritmo SM-2: baralhos, importação de CSV, limite diário, estatísticas e backup, tudo no navegador.",
+  "type": "module",
+  "scripts": { "test": "node --test" },
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/micdog22/cartoes-de-estudo.git" },
+  "homepage": "https://micdog22.github.io/cartoes-de-estudo/"
+}

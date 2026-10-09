@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cartões de Estudo: flashcards com repetição espaçada</title>
+  <meta name="description" content="Flashcards com repetição espaçada pelo algoritmo SM-2: baralhos, importação de CSV, limite diário de cartões novos, estatísticas, atalhos de teclado e backup. Tudo salvo no seu navegador.">
+  <meta name="theme-color" content="#be185d">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./src/app.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <h1>Cartões de Estudo</h1>
+    <p class="lead">Flashcards com repetição espaçada: você revisa cada cartão pouco antes de esquecer, e o intervalo cresce a cada acerto.</p>
+    <nav class="topnav" aria-label="Seções">
+      <a href="#/" data-nav="home">Baralhos</a>
+      <a href="#/estatisticas" data-nav="stats">Estatísticas</a>
+      <a href="#/ajustes" data-nav="settings">Backup e ajustes</a>
+    </nav>
+  </header>
+
+  <main>
+    <p class="notice" id="notice" role="status" aria-live="polite" hidden></p>
+
+    <!-- Baralhos -->
+    <section id="view-home" aria-labelledby="t-home">
+      <div class="tiles" id="home-tiles"></div>
+      <div class="card">
+        <h2 id="t-home">Seus baralhos</h2>
+        <div id="deck-list"></div>
+        <form class="inline-form" id="new-deck-form">
+          <label for="new-deck-name" class="sr-only">Nome do novo baralho</label>
+          <input type="text" id="new-deck-name" placeholder="Nome do novo baralho" maxlength="80" autocomplete="off">
+          <button type="submit" class="btn primary">Criar baralho</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Estudo -->
+    <section id="view-study" aria-labelledby="t-study" hidden>
+      <div class="card study">
+        <div class="study-head">
+          <h2 id="t-study"></h2>
+          <span class="progress" id="study-progress" aria-live="polite"></span>
+          <a href="#/" class="btn small">Sair</a>
+        </div>
+        <div id="study-body"></div>
+      </div>
+      <p class="muted small center">Atalhos: <kbd>espaço</kbd> mostra a resposta; <kbd>1</kbd> Errei, <kbd>2</kbd> Difícil, <kbd>3</kbd> Bom, <kbd>4</kbd> Fácil; <kbd>Esc</kbd> sai.</p>
+    </section>
+
+    <!-- Editar baralho -->
+    <section id="view-deck" aria-labelledby="t-deck" hidden>
+      <div class="card">
+        <div class="deck-head">
+          <h2 id="t-deck"></h2>
+          <div class="row-actions">
+            <a class="btn primary" id="deck-study" href="#/">Estudar</a>
+            <a class="btn" href="#/">Voltar</a>
+          </div>
+        </div>
+        <form class="inline-form" id="rename-form">
+          <label for="rename-input" class="sr-only">Nome do baralho</label>
+          <input type="text" id="rename-input" maxlength="80" autocomplete="off">
+          <button type="submit" class="btn">Renomear</button>
+          <button type="button" class="btn danger-outline" id="delete-deck">Excluir baralho</button>
+        </form>
+        <div class="confirm" id="delete-confirm" hidden>
+          <span>Excluir o baralho, todos os cartões e o histórico dele?</span>
+          <button type="button" class="btn danger" id="delete-yes">Sim, excluir</button>
+          <button type="button" class="btn" id="delete-no">Cancelar</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Novo cartão</h2>
+        <form id="card-form">
+          <div class="two-col">
+            <div>
+              <label for="card-front">Frente (pergunta)</label>
+              <textarea id="card-front" rows="3"></textarea>
+            </div>
+            <div>
+              <label for="card-back">Verso (resposta)</label>
+              <textarea id="card-back" rows="3"></textarea>
+            </div>
+          </div>
+          <p class="muted small">Dá para usar <code>**negrito**</code>, <code>*itálico*</code> e <code>`código`</code>. <kbd>Ctrl</kbd> + <kbd>Enter</kbd> adiciona.</p>
+          <div class="two-col preview" aria-label="Prévia do cartão">
+            <div class="face" id="prev-front"></div>
+            <div class="face" id="prev-back"></div>
+          </div>
+          <button type="submit" class="btn primary">Adicionar cartão</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="deck-head">
+          <h2 id="t-cards">Cartões</h2>
+          <label class="sr-only" for="card-filter">Filtrar cartões</label>
+          <input type="text" id="card-filter" placeholder="Filtrar…" autocomplete="off">
+        </div>
+        <div id="card-list"></div>
+      </div>
+
+      <div class="card">
+        <h2>Importar e exportar</h2>
+        <label for="import-text">Cole uma linha por cartão, no formato <code>pergunta;resposta</code> (também vale tab ou vírgula; use aspas se o texto tiver o separador)</label>
+        <textarea id="import-text" rows="4" placeholder="Capital do Brasil;Brasília&#10;&quot;2 + 2; quanto dá?&quot;;4"></textarea>
+        <div class="row-actions">
+          <button type="button" class="btn primary" id="import-go">Importar</button>
+          <label class="btn file-btn">Escolher arquivo CSV ou TSV<input type="file" id="import-file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"></label>
+          <button type="button" class="btn" id="export-csv">Baixar CSV</button>
+          <button type="button" class="btn" id="export-tsv">Baixar TSV</button>
+        </div>
+        <p id="import-result" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <!-- Estatísticas -->
+    <section id="view-stats" aria-labelledby="t-stats" hidden>
+      <div class="card">
+        <h2 id="t-stats">Estatísticas</h2>
+        <div class="tiles" id="stats-tiles"></div>
+      </div>
+      <div class="card">
+        <h2>Respostas nos últimos 14 dias</h2>
+        <div class="chart" id="chart-history"></div>
+      </div>
+      <div class="card">
+        <h2>Revisões previstas para os próximos 14 dias</h2>
+        <div class="chart" id="chart-forecast"></div>
+      </div>
+      <div class="card">
+        <h2>Por baralho</h2>
+        <div class="table-wrap" id="stats-decks"></div>
+      </div>
+    </section>
+
+    <!-- Ajustes -->
+    <section id="view-settings" aria-labelledby="t-settings" hidden>
+      <div class="card">
+        <h2 id="t-settings">Ajustes</h2>
+        <form class="inline-form" id="settings-form">
+          <label for="new-per-day">Cartões novos por dia, em cada baralho</label>
+          <input type="number" id="new-per-day" min="0" max="999" inputmode="numeric">
+          <button type="submit" class="btn">Salvar</button>
+        </form>
+      </div>
+      <div class="card">
+        <h2>Backup</h2>
+        <p class="muted small">Os cartões ficam guardados só neste navegador (localStorage). Faça backup para não perder nada ao limpar os dados do navegador ou para levar seus baralhos para outro computador.</p>
+        <div class="row-actions">
+          <button type="button" class="btn primary" id="backup-download">Baixar backup (JSON)</button>
+          <label class="btn file-btn">Restaurar backup<input type="file" id="backup-file" accept=".json,application/json"></label>
+        </div>
+        <div class="confirm" id="restore-confirm" hidden>
+          <span id="restore-summary"></span>
+          <button type="button" class="btn danger" id="restore-yes">Substituir tudo</button>
+          <button type="button" class="btn" id="restore-no">Cancelar</button>
+        </div>
+        <p id="backup-result" aria-live="polite"></p>
+      </div>
+      <div class="card">
+        <h2>Apagar tudo</h2>
+        <button type="button" class="btn danger-outline" id="wipe">Apagar todos os baralhos e o histórico</button>
+        <div class="confirm" id="wipe-confirm" hidden>
+          <span>Isso não pode ser desfeito. Baixou o backup?</span>
+          <button type="button" class="btn danger" id="wipe-yes">Apagar</button>
+          <button type="button" class="btn" id="wipe-no">Cancelar</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Tudo roda no seu navegador. Código aberto no <a href="https://github.com/micdog22/cartoes-de-estudo">GitHub</a> · Licença MIT</p>
+  </footer>
+</body>
+</html>
